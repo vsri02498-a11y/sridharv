@@ -1143,7 +1143,12 @@
                 <div class="subtitle">𝚃𝚑𝚒𝚗𝚔 𝚍𝚒𝚏𝚏𝚎𝚛𝚎𝚗𝚝-𝚏𝚎𝚎𝚕 𝚒𝚗𝚏𝚒𝚗𝚒𝚝𝚎 </div>
             </div>
 
-            
+            <div class="controls-container">
+                <button id="settingsBtn" class="btn" aria-label="Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
 
         <!-- Settings Modal -->
         <div id="modalBackdrop" class="modal-backdrop"></div>
@@ -1847,14 +1852,14 @@
                 // Enhanced Piece-Square Tables with neural network inspired evaluation
                 const PST = {
                     p: [
-                         0,  0,  0,  0,  0,  0,  0,  0],
-                        [ 50, 50, 50, 50, 50, 50, 50, 50],
-                        [ 10, 10, 20, 30, 30, 20, 10, 10],
-                        [  5,  5,  10, 25, 25, 10,  5,  5],
-                        [  0,  0,  0, 20, 20,  0,  0,  0],
-                        [  5, -5,-10,  0,  0,-10, -5,  5],
-                        [  5, 10, 10,-20,-20, 10, 10,  5],
-                        [  0,  0,  0,  0,  0,  0,  0,  0]
+                        [ 0,  0,  0,  0,  0,  0,  0,  0],
+                        [50, 50, 50, 50, 50, 50, 50, 50],
+                        [10, 10, 20, 30, 30, 20, 10, 10],
+                        [ 5,  5, 10, 25, 25, 10,  5,  5],
+                        [ 0,  0,  0, 20, 20,  0,  0,  0],
+                        [ 5, -5,-10,  0,  0,-10, -5,  5],
+                        [ 5, 10, 10,-20,-20, 10, 10,  5],
+                        [ 0,  0,  0,  0,  0,  0,  0,  0]
                     ],
                     n: [
                         [-50,-40,-30,-30,-30,-30,-40,-50],
@@ -1905,7 +1910,7 @@
                         [-10,-20,-20,-20,-20,-20,-20,-10],
                         [ 20, 20,  0,  0,  0,  0, 20, 20],
                         [ 20, 30, 10,  0,  0, 10, 30, 20]
-                    ] [
+                    ]
                 };
 
                 // Neural Network Simulation (Simplified)
@@ -2799,8 +2804,6 @@
             if (GameState.game.history().length === 0 || GameState.puzzleMode) return;
             let undos = 1;
             GameState.game.undo();
-            cachedEval = null;
-            cachedFen = null;
             if (GameState.vsComputer && GameState.game.history().length > 0 && GameState.game.turn() !== GameState.playerColor) { GameState.game.undo(); undos = 2; }
             for (let i = 0; i < undos; i++) if (GameState.timeHistory.length > 0) GameState.timeHistory.pop();
             const last = GameState.timeHistory.length > 0 ? GameState.timeHistory[GameState.timeHistory.length - 1] : null;
@@ -2863,8 +2866,11 @@
         loadGameState();
 
         /* ---------- Events ---------- */
-        $('#resetButton').click(resetGame);
-        $('#undoButton').click(undoMove);
+        // Attach reset/undo to mobile buttons (they exist)
+        $('#mobileReset').click(resetGame);
+        $('#mobileUndo').click(undoMove);
+        
+        // Other event handlers
         $('#modeToggle').click(function () { 
             GameState.vsComputer = !GameState.vsComputer; 
             $(this).html('<i class="fas fa-robot"></i> Mode: ' + (GameState.vsComputer ? 'vs Computer' : 'vs Player')); 
@@ -2877,7 +2883,7 @@
                 showNotification('Multiplayer Mode', 'Share the game link with a friend to play together!', 5000);
             }
         });
-        $('#trainingBtn').click(function () { 
+        $('#trainingMode').click(function () { 
             GameState.trainingMode = !GameState.trainingMode;
             $(this).html('<i class="fas fa-graduation-cap"></i> Training: ' + (GameState.trainingMode ? 'On' : 'Off'));
             if (GameState.trainingMode) {
@@ -2894,7 +2900,6 @@
             scheduleSave(); 
             showNotification('AI Style Changed', 'AI playing style: ' + $(this).val(), 2000);
         });
-        $('#speed').change(function () { GameState.aiDelay = parseInt($(this).val(), 10) || 1000; scheduleSave(); });
         $('#toggleHistory').click(function () { 
             GameState.showMoveHistory = !GameState.showMoveHistory; 
             $('#historyToggleText').text(GameState.showMoveHistory ? 'Hide History' : 'Show History'); 
@@ -2946,18 +2951,11 @@
                 showAlert('Hints only in puzzle mode'); 
             } 
         });
-        $('#trainingMode').click(function () { 
-            GameState.trainingMode = !GameState.trainingMode;
-            $(this).html('<i class="fas fa-graduation-cap"></i> Training: ' + (GameState.trainingMode ? 'On' : 'Off'));
-            if (GameState.trainingMode) {
-                showNotification('Training Mode', 'Learn chess with guided exercises and feedback!', 4000);
-            }
-        });
         $('#flipBoard').click(function () { GameState.board.flip(); });
         $('#copyFenBtn').click(function () { 
             navigator.clipboard.writeText(GameState.game.fen()).then(() => showAlert('FEN copied to clipboard!'), () => showAlert('Copy failed')); 
         });
-        $('#hintBtn').click(function() {
+        $('#mobileHint').click(function() {
             if (GameState.aiThinking || GameState.gameOver || GameState.isPaused || GameState.game.turn() !== GameState.playerColor || !GameState.vsComputer) {
                 showAlert('Hint not available now');
                 return;
@@ -2968,18 +2966,7 @@
         });
         
         // Mobile controls
-        $('#mobileUndo').click(undoMove);
-        $('#mobileHint').click(function() {
-            if (GameState.aiThinking || GameState.gameOver || GameState.isPaused || GameState.game.turn() !== GameState.playerColor || !GameState.vsComputer) {
-                showAlert('Hint not available now');
-                return;
-            }
-            showAlert('Computing hint...');
-            GameState.gettingHint = true;
-            computeBestMove();
-        });
         $('#mobileFlip').click(function() { GameState.board.flip(); });
-        $('#mobileReset').click(resetGame);
         $('#mobileTraining').click(function() { 
             GameState.trainingMode = !GameState.trainingMode;
             $(this).html('<i class="fas fa-graduation-cap"></i> ' + (GameState.trainingMode ? 'Training On' : 'Training Off'));
@@ -3037,20 +3024,18 @@
         $promotionDialog.find('button').click(function () {
             const promotion = $(this).data('promotion');
             if (!GameState.pendingPromotion) { closePromotionDialog(); return; }
-            GameState.pendingPromotion.promotion = promotion;
-            const success = handleMove(GameState.pendingPromotion);
+            
+            // Store move locally before clearing pendingPromotion
+            const promotionMove = { ...GameState.pendingPromotion, promotion };
+            GameState.pendingPromotion = null; // Clear early to avoid re-use
             GameState.awaitingPromotion = false;
             closePromotionDialog();
-            if (!success) { showAlert('Invalid move!'); GameState.pendingPromotion = null; return; }
-            if (GameState.vsComputer && !GameState.game.game_over() && !GameState.puzzleMode && GameState.game.turn() === GameState.aiColor) {
-                setTimeout(computeBestMove, GameState.aiDelay);
-            }
-            scheduleSave();
-            GameState.pendingPromotion = null;
-            $srLive.text('Promotion to ' + promotion.toUpperCase());
-
+            
+            const success = handleMove(promotionMove);
+            if (!success) { showAlert('Invalid move!'); return; }
+            
             if (GameState.puzzleMode) {
-                const attempted = GameState.pendingPromotion.from + GameState.pendingPromotion.to + (GameState.pendingPromotion.promotion || '');
+                const attempted = promotionMove.from + promotionMove.to + promotionMove.promotion;
                 if (attempted === GameState.currentPuzzle.solution) {
                     showWinner('Puzzle Solved!');
                     setTimeout(loadRandomPuzzle, 3000);
@@ -3059,7 +3044,11 @@
                     GameState.game.undo();
                     if (GameState.board && typeof GameState.board.position === 'function') GameState.board.position(GameState.game.fen());
                 }
+            } else if (GameState.vsComputer && !GameState.game.game_over() && !GameState.puzzleMode && GameState.game.turn() === GameState.aiColor) {
+                setTimeout(computeBestMove, GameState.aiDelay);
             }
+            scheduleSave();
+            $srLive.text('Promotion to ' + promotion.toUpperCase());
         });
 
         /* keyboard for promotion & close settings */
@@ -3180,8 +3169,6 @@
             updateMoveHistory();
             updateStatus();
             highlightLastMove();
-            cachedEval = null;
-            cachedFen = null;
             
             // Update game length
             GameState.gameLength = GameState.game.history().length;
